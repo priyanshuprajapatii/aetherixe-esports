@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AETHERIX ESPORTS</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
-:root {
-  --black:#080808; --dark:#111; --card:#141414; --border:#1e1e1e;
-  --red:#d40000; --redglow:rgba(212,0,0,0.25); --redlight:#ff2222;
-  --silver:#c0c0c0; --white:#f0f0f0; --muted:#555;
+:root{
+  --black:#080808;--dark:#111;--card:#141414;--border:#1e1e1e;
+  --red:#d40000;--redglow:rgba(212,0,0,0.25);--redlight:#ff2222;
+  --silver:#c0c0c0;--white:#f0f0f0;--muted:#555;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--black);color:var(--white);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden}
@@ -18,14 +20,29 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .page{display:none;min-height:100vh;flex-direction:column}
 .page.active{display:flex}
 .page.center{align-items:center;justify-content:center}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.6}94%{opacity:1}96%{opacity:.8}97%{opacity:1}}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.5}94%{opacity:1}96%{opacity:.8}97%{opacity:1}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes scanmove{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
 @keyframes pulseRed{0%,100%{box-shadow:0 0 0 0 var(--redglow)}50%{box-shadow:0 0 20px 5px var(--redglow)}}
-@keyframes bannerIn{from{opacity:0;transform:scale(.95) translateY(-10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes bannerIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 @keyframes rowSlide{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
 .scanline{position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(transparent,rgba(212,0,0,.06),transparent);animation:scanmove 7s linear infinite;pointer-events:none;z-index:100}
+
+/* ── LOADING SCREEN ── */
+#page-loading{background:radial-gradient(ellipse at 50% 40%,#1a0000 0%,var(--black) 65%)}
+.loading-inner{text-align:center}
+.loading-logo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:6px;animation:flicker 3s infinite}
+.loading-sub{font-size:10px;letter-spacing:8px;color:var(--red);margin-top:4px;text-transform:uppercase}
+.loading-bar-wrap{width:220px;height:2px;background:#1e1e1e;margin:28px auto 16px;overflow:hidden}
+.loading-bar{height:100%;width:0%;background:var(--red);transition:width .4s ease;box-shadow:0 0 8px var(--red)}
+.loading-status{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px}
+.loading-err{font-size:12px;color:var(--redlight);margin-top:12px;letter-spacing:1px;display:none;max-width:340px}
+.loading-err a{color:var(--red);cursor:pointer;text-decoration:underline}
 
 /* ── LOGIN ── */
 #page-login{background:radial-gradient(ellipse at 50% 40%,#1a0000 0%,var(--black) 65%)}
@@ -35,6 +52,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .logo-word{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:5px;text-align:center;animation:flicker 6s infinite}
 .logo-sub{font-size:10px;letter-spacing:7px;color:var(--red);text-align:center;margin-top:2px;text-transform:uppercase}
 .logo-line{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);margin:16px auto 28px}
+.conn-status{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:18px;font-size:11px;letter-spacing:2px;color:var(--muted)}
+.conn-dot{width:7px;height:7px;border-radius:50%}
+.conn-dot.online{background:#00cc44;box-shadow:0 0 8px #00cc44}
+.conn-dot.offline{background:var(--red);animation:blink 1s infinite}
+.conn-dot.connecting{background:#ffaa00;animation:blink .5s infinite}
 .lbl{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:7px;display:block}
 .inp{width:100%;background:#0c0c0c;border:1px solid #280000;border-left:2px solid var(--red);color:var(--white);font-family:'Share Tech Mono',monospace;font-size:14px;padding:11px 14px;outline:none;transition:box-shadow .2s,border-color .2s;margin-bottom:18px;letter-spacing:1px}
 .inp:focus{border-color:var(--red);box-shadow:0 0 14px var(--redglow)}
@@ -47,7 +69,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .btn-main:hover::after{left:100%}
 .err-msg{background:rgba(212,0,0,.08);border-left:2px solid var(--red);color:var(--redlight);font-size:11px;letter-spacing:1px;padding:9px 13px;margin-bottom:14px;display:none}
 .admin-toggle{text-align:center;margin-top:16px;font-size:11px;color:var(--muted);letter-spacing:2px}
-.admin-toggle a{color:var(--red);cursor:pointer;text-decoration:none}
+.admin-toggle a{color:var(--red);cursor:pointer}
 .admin-toggle a:hover{text-decoration:underline}
 
 /* ── NAVBAR ── */
@@ -61,8 +83,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .nav-badge{font-size:9px;letter-spacing:3px;padding:3px 8px;border:1px solid #2a0000;color:var(--red);text-transform:uppercase}
 .nav-btn{background:none;border:1px solid #222;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;padding:5px 13px;cursor:pointer;text-transform:uppercase;transition:all .2s}
 .nav-btn:hover{border-color:var(--red);color:var(--red)}
+.rt-indicator{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:2px;color:#00cc44}
+.rt-dot{width:6px;height:6px;border-radius:50%;background:#00cc44;box-shadow:0 0 7px #00cc44;animation:blink 2s infinite}
 
-/* ══ SCHEDULE BANNER MODAL ══ */
+/* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:800;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
 .modal-overlay.hidden{display:none}
 .sched-modal{width:100%;max-width:700px;background:var(--card);border:1px solid #220000;border-top:3px solid var(--red);position:relative;animation:bannerIn .35s ease both;margin:16px;max-height:90vh;display:flex;flex-direction:column}
@@ -75,7 +99,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .live-dot{width:6px;height:6px;background:var(--red);border-radius:50%;display:inline-block;animation:blink 1s infinite}
 .modal-close{background:none;border:1px solid #2a0000;color:var(--muted);width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .modal-close:hover{border-color:var(--red);color:var(--red)}
-.modal-ann{margin:14px 26px 0;background:rgba(212,0,0,.07);border-left:2px solid var(--red);padding:10px 14px;font-size:13px;color:var(--silver);letter-spacing:.5px;display:none;flex-shrink:0}
+.modal-ann{margin:14px 26px 0;background:rgba(212,0,0,.07);border-left:2px solid var(--red);padding:10px 14px;font-size:13px;color:var(--silver);display:none;flex-shrink:0}
 .modal-ann.show{display:block}
 .modal-body{padding:18px 26px 0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;flex:1}
 .sched-row{display:grid;grid-template-columns:68px 1fr auto;align-items:center;gap:14px;padding:14px 16px;background:var(--black);border:1px solid var(--border);border-left:2px solid transparent;animation:rowSlide .3s ease both;transition:border-color .2s}
@@ -129,6 +153,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .dash-empty{text-align:center;padding:50px 20px;border:1px dashed #1e0000;color:var(--muted)}
 .dash-empty .big{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#1a1a1a;display:block;margin-bottom:6px}
 
+/* ── UPDATE FLASH ── */
+.update-flash{position:fixed;top:70px;right:20px;background:var(--card);border-left:3px solid #00cc44;color:#00cc44;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:10px 16px;z-index:700;opacity:0;transform:translateX(20px);transition:all .3s;pointer-events:none}
+.update-flash.show{opacity:1;transform:translateX(0)}
+
 /* ── ADMIN ── */
 .admin-wrap{flex:1;padding:28px 32px;max-width:880px;width:100%;margin:0 auto;animation:fadeUp .4s ease both}
 .admin-title{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:4px;margin-bottom:4px}
@@ -175,7 +203,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .btn-clr{background:none;border:1px solid #300;color:#400;font-size:9px;letter-spacing:3px;padding:6px 14px;cursor:pointer;text-transform:uppercase;transition:all .2s;font-family:'Rajdhani',sans-serif}
 .btn-clr:hover{border-color:var(--red);color:var(--red)}
 
-/* ── Toast ── */
 .toast{position:fixed;bottom:28px;right:28px;background:var(--card);border-left:3px solid var(--red);color:var(--white);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:11px 18px;z-index:2000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
@@ -185,7 +212,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   .form-grid{grid-template-columns:1fr}
   .sched-row{grid-template-columns:58px 1fr}
   .sr-right{display:none}
-  .nav-uid{display:none}
+  .nav-uid,.rt-indicator{display:none}
   .modal-head{padding:16px 16px 0}
   .modal-body{padding:14px 16px 0}
   .modal-footer{padding:12px 16px}
@@ -196,8 +223,20 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 <body>
 <div class="scanline"></div>
 <div class="toast" id="toast"></div>
+<div class="update-flash" id="update-flash">⚡ Schedule updated!</div>
 
-<!-- ══ SCHEDULE MODAL BANNER ══ -->
+<!-- ══ LOADING ══ -->
+<div class="page active center" id="page-loading">
+  <div class="loading-inner">
+    <div class="loading-logo">AETHERIX</div>
+    <div class="loading-sub">Esports · Free Fire</div>
+    <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+    <div class="loading-status" id="loading-status">Connecting to server…</div>
+    <div class="loading-err" id="loading-err"></div>
+  </div>
+</div>
+
+<!-- ══ SCHEDULE MODAL ══ -->
 <div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="sched-modal">
     <div class="modal-head">
@@ -210,24 +249,25 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-
     <div class="modal-ann" id="modal-ann"></div>
-
     <div class="modal-body" id="modal-body"></div>
-
     <div class="modal-footer">
-      <div class="modal-footer-info"><span id="modal-count">0</span> MATCH(ES) &nbsp;·&nbsp; FREE FIRE ONLY</div>
+      <div class="modal-footer-info"><span id="modal-count">0</span> MATCH(ES) · FREE FIRE</div>
       <button class="btn-close-main" onclick="closeModal()">GOT IT</button>
     </div>
   </div>
 </div>
 
-<!-- ══ LOGIN PAGE ══ -->
-<div class="page active center" id="page-login">
+<!-- ══ LOGIN ══ -->
+<div class="page center" id="page-login">
   <div class="login-box">
     <div class="logo-word">AETHERIX</div>
     <div class="logo-sub">Esports · Free Fire</div>
     <div class="logo-line"></div>
+    <div class="conn-status">
+      <span class="conn-dot online"></span>
+      <span>Firebase Connected</span>
+    </div>
     <div class="err-msg" id="err"></div>
     <label class="lbl">Gaming UID</label>
     <input class="inp" id="i-uid" type="text" placeholder="e.g. AX-0042" autocomplete="off" onkeydown="if(event.key==='Enter')handleLogin()"/>
@@ -251,6 +291,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   <nav class="navbar">
     <div class="nav-brand"><span class="dot"></span> AETHERIX ESPORTS</div>
     <div class="nav-r">
+      <div class="rt-indicator"><span class="rt-dot"></span> LIVE SYNC</div>
       <div class="nav-uid">UID: <span id="nav-uid-val">—</span></div>
       <div class="nav-badge" id="nav-badge">PLAYER</div>
       <button class="nav-btn" id="admin-panel-btn" style="display:none" onclick="showAdmin()">ADMIN PANEL</button>
@@ -268,11 +309,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
-<!-- ══ ADMIN PAGE ══ -->
+<!-- ══ ADMIN ══ -->
 <div class="page" id="page-admin">
   <nav class="navbar">
     <div class="nav-brand"><span class="dot"></span> AETHERIX — ADMIN</div>
     <div class="nav-r">
+      <div class="rt-indicator"><span class="rt-dot"></span> LIVE SYNC</div>
       <div class="nav-badge" style="color:#ffaa00;border-color:#442200">ADMIN</div>
       <button class="nav-btn" onclick="showDash()">← DASHBOARD</button>
       <button class="nav-btn" onclick="logout()">LOGOUT</button>
@@ -280,35 +322,28 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </nav>
   <div class="admin-wrap">
     <div class="admin-title">SCHEDULE <span>MANAGER</span></div>
-    <div class="admin-sub">Free Fire · Daily Tournament Control</div>
+    <div class="admin-sub">Free Fire · Changes reflect instantly on all devices</div>
 
-    <!-- Date Selector -->
     <div class="date-ctrl">
       <label>Select Date</label>
-      <input type="date" id="admin-date" onchange="renderAdmin()"/>
+      <input type="date" id="admin-date" onchange="switchAdminDate()"/>
       <span class="date-note" id="date-note-txt"></span>
     </div>
 
-    <!-- Announcement Banner -->
     <div class="admin-section">
       <h3>📢 ANNOUNCEMENT BANNER</h3>
       <div class="row-inp">
-        <input type="text" id="ann-inp" placeholder="e.g. Be online 10 min before match time. Good luck! 🔥"/>
+        <input type="text" id="ann-inp" placeholder="e.g. Be online 10 min before match time! 🔥"/>
         <button class="btn-s" onclick="saveBanner()">SAVE</button>
         <button class="btn-s grey" onclick="clearBanner()">CLEAR</button>
       </div>
     </div>
 
-    <!-- Add Match Form -->
     <div class="admin-section">
       <h3>+ ADD FREE FIRE MATCH</h3>
       <div class="form-grid">
-        <div class="fg">
-          <label>Tournament / Match Name</label>
-          <input type="text" id="f-name" placeholder="e.g. FF Pro Scrim #7"/>
-        </div>
-        <div class="fg">
-          <label>Mode</label>
+        <div class="fg"><label>Tournament / Match Name</label><input type="text" id="f-name" placeholder="e.g. FF Pro Scrim #7"/></div>
+        <div class="fg"><label>Mode</label>
           <select id="f-mode">
             <option value="Battle Royale">Battle Royale</option>
             <option value="Clash Squad">Clash Squad</option>
@@ -318,35 +353,21 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
             <option value="Practice">Practice</option>
           </select>
         </div>
-        <div class="fg">
-          <label>Match Time</label>
-          <input type="time" id="f-time"/>
-        </div>
-        <div class="fg">
-          <label>Status</label>
+        <div class="fg"><label>Match Time</label><input type="time" id="f-time"/></div>
+        <div class="fg"><label>Status</label>
           <select id="f-status">
             <option value="upcoming">Upcoming</option>
             <option value="live">Live Now</option>
             <option value="done">Completed</option>
           </select>
         </div>
-        <div class="fg">
-          <label>Room ID</label>
-          <input type="text" id="f-room" placeholder="e.g. 8837261"/>
-        </div>
-        <div class="fg">
-          <label>Room Password</label>
-          <input type="text" id="f-roompass" placeholder="e.g. AX2025"/>
-        </div>
-        <div class="fg full">
-          <label>Notes (optional)</label>
-          <input type="text" id="f-notes" placeholder="e.g. Bermuda map · Squads · Record gameplay"/>
-        </div>
+        <div class="fg"><label>Room ID</label><input type="text" id="f-room" placeholder="e.g. 8837261"/></div>
+        <div class="fg"><label>Room Password</label><input type="text" id="f-roompass" placeholder="e.g. AX2025"/></div>
+        <div class="fg full"><label>Notes (optional)</label><input type="text" id="f-notes" placeholder="e.g. Bermuda · Squads · Record gameplay"/></div>
       </div>
       <button class="btn-add" onclick="addMatch()">+ ADD MATCH</button>
     </div>
 
-    <!-- Match List for selected date -->
     <div class="section-lbl">MATCHES — <span id="admin-date-lbl" style="color:var(--red);margin-left:4px"></span></div>
     <div class="admin-list" id="admin-list"></div>
     <div class="clear-bar"><button class="btn-clr" onclick="clearDay()">CLEAR THIS DAY</button></div>
@@ -354,17 +375,30 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </div>
 
 <script>
-const ADMIN_PASS = 'aetherix2025';
+// ══════════════════════════════════════════
+//  FIREBASE CONFIG — AETHERIX ESPORTS
+// ══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC3GBQnBvTtB5QfGpoxTPoWpIsiTh15dps",
+  authDomain: "aetherixesp-31267.firebaseapp.com",
+  databaseURL: "https://aetherixesp-31267-default-rtdb.firebaseio.com",
+  projectId: "aetherixesp-31267",
+  storageBucket: "aetherixesp-31267.firebasestorage.app",
+  messagingSenderId: "187377604230",
+  appId: "1:187377604230:web:de965ad5b84c45ee46e307"
+};
+
+const ADMIN_PASS = 'aetherix2025'; // Change this!
+
+// ══ Init Firebase ══
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 let currentUser = null;
+let activeListeners = {};
+let firstDashLoad  = true;
 
-// ── Storage ──
-const SK = d => `ax_sched_${d}`;
-const BK = d => `ax_banner_${d}`;
-function getSched(d){ try{ return JSON.parse(localStorage.getItem(SK(d))||'[]'); }catch{ return []; } }
-function setSched(d,v){ localStorage.setItem(SK(d), JSON.stringify(v)); }
-function getBanner(d){ return localStorage.getItem(BK(d))||''; }
-function setBanner(d,v){ localStorage.setItem(BK(d), v); }
-
+// ── Helpers ──
 function todayStr(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -373,26 +407,61 @@ function fmtDateLong(s){
   return new Date(s+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
 function fmt12(t){
-  const [h,m]=t.split(':').map(Number);
+  const[h,m]=t.split(':').map(Number);
   return `${h%12||12}:${String(m).padStart(2,'0')}<small>${h>=12?'PM':'AM'}</small>`;
 }
 function fmt12plain(t){
-  const [h,m]=t.split(':').map(Number);
+  const[h,m]=t.split(':').map(Number);
   return `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
 }
 
-// ── Pages ──
+// ── Page system ──
 function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>{ p.classList.remove('active','center'); });
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','center'));
   const el=document.getElementById(id);
   el.classList.add('active');
   if(id==='page-login') el.classList.add('center');
 }
 
-// ── Login ──
+// ══ STARTUP — Loading Screen ══
+(function init(){
+  const bar    = document.getElementById('loading-bar');
+  const status = document.getElementById('loading-status');
+  const errEl  = document.getElementById('loading-err');
+
+  let progress = 0;
+  const tick = setInterval(()=>{
+    progress = Math.min(progress + Math.random()*18, 85);
+    bar.style.width = progress+'%';
+  }, 300);
+
+  // Wait for Firebase connection
+  db.ref('.info/connected').on('value', snap=>{
+    if(snap.val()===true){
+      clearInterval(tick);
+      bar.style.width='100%';
+      status.textContent='Connected! ✓';
+      setTimeout(()=>showPage('page-login'), 600);
+    }
+  });
+
+  // Timeout fallback — databaseURL wrong ho sakta
+  setTimeout(()=>{
+    if(document.getElementById('page-loading').classList.contains('active')){
+      clearInterval(tick);
+      status.textContent='Connection failed';
+      errEl.innerHTML = `Firebase Realtime Database enabled nahi hai ya databaseURL galat hai.<br>
+        <a href="https://console.firebase.google.com/project/aetherixesp-31267/database" target="_blank">
+        Firebase Console kholein → Realtime Database enable karein → Test mode</a>`;
+      errEl.style.display='block';
+    }
+  }, 10000);
+})();
+
+// ══ LOGIN ══
 function toggleAdminPass(){
-  document.getElementById('pass-wrap').style.display =
-    document.getElementById('i-role').value==='admin' ? 'block' : 'none';
+  document.getElementById('pass-wrap').style.display=
+    document.getElementById('i-role').value==='admin'?'block':'none';
 }
 function openAdminLogin(){
   document.getElementById('i-role').value='admin';
@@ -404,16 +473,18 @@ function handleLogin(){
   const role = document.getElementById('i-role').value;
   const pass = document.getElementById('i-pass').value;
   document.getElementById('err').style.display='none';
-  if(!uid)  { showErr('Enter your Gaming UID.'); return; }
-  if(!role) { showErr('Select your role.'); return; }
-  if(role==='admin' && pass!==ADMIN_PASS){ showErr('Wrong admin password.'); return; }
+  if(!uid)  {showErr('Gaming UID enter karo.'); return;}
+  if(!role) {showErr('Role select karo.'); return;}
+  if(role==='admin'&&pass!==ADMIN_PASS){showErr('Admin password galat hai.'); return;}
+
   currentUser={uid,role};
   document.getElementById('nav-uid-val').textContent=uid;
   document.getElementById('nav-badge').textContent=role.toUpperCase();
   if(role==='admin') document.getElementById('admin-panel-btn').style.display='block';
+
   showPage('page-dash');
-  renderDash();
-  setTimeout(()=>openModal(),500);
+  attachDashListener();
+  setTimeout(()=>openModal(), 600);
 }
 function showErr(msg){
   const e=document.getElementById('err');
@@ -421,7 +492,10 @@ function showErr(msg){
   e.style.display='block';
 }
 function logout(){
+  Object.values(activeListeners).forEach(ref=>ref&&ref.off&&ref.off());
+  activeListeners={};
   currentUser=null;
+  firstDashLoad=true;
   ['i-uid','i-pass'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('i-role').value='';
   document.getElementById('pass-wrap').style.display='none';
@@ -431,72 +505,101 @@ function logout(){
   showPage('page-login');
 }
 
-// ── Modal ──
+// ══ REALTIME LISTENERS ══
+function attachDashListener(){
+  const today=todayStr();
+  const ref=db.ref(`schedule/${today}`);
+  if(activeListeners.dash) activeListeners.dash.off();
+  activeListeners.dash=ref;
+
+  ref.on('value', snap=>{
+    const data=snap.val()||{};
+    renderDashFromData(data);
+    if(!firstDashLoad){
+      showUpdateFlash();
+      if(!document.getElementById('modal-overlay').classList.contains('hidden')) openModal();
+    }
+    firstDashLoad=false;
+  });
+}
+
+function attachAdminListener(date){
+  const ref=db.ref(`schedule/${date}`);
+  if(activeListeners.admin) activeListeners.admin.off();
+  activeListeners.admin=ref;
+  ref.on('value', snap=>{
+    renderAdminFromData(date, snap.val()||{});
+  });
+}
+
+// ══ MODAL ══
 function openModal(){
   const today=todayStr();
-  const sched=getSched(today);
-  const banner=getBanner(today);
-  const sorted=[...sched].sort((a,b)=>a.time.localeCompare(b.time));
-
   document.getElementById('modal-date-txt').textContent=fmtDateLong(today);
-  document.getElementById('modal-count').textContent=sched.length;
+  db.ref(`schedule/${today}`).once('value', snap=>{
+    const data    = snap.val()||{};
+    const matches = Object.values(data.matches||{});
+    const banner  = data.banner||'';
+    const sorted  = [...matches].sort((a,b)=>a.time.localeCompare(b.time));
 
-  const annEl=document.getElementById('modal-ann');
-  if(banner){ annEl.textContent='📢 '+banner; annEl.classList.add('show'); }
-  else { annEl.classList.remove('show'); }
+    document.getElementById('modal-count').textContent=matches.length;
 
-  const body=document.getElementById('modal-body');
-  body.innerHTML='';
+    const annEl=document.getElementById('modal-ann');
+    if(banner){annEl.textContent='📢 '+banner;annEl.classList.add('show');}
+    else{annEl.classList.remove('show');}
 
-  if(!sorted.length){
-    body.innerHTML=`<div class="modal-empty"><span class="big">NO MATCHES TODAY</span>Admin will post the schedule soon. Stay ready! 🔥</div>`;
-  } else {
-    const isAdmin = currentUser && currentUser.role==='admin';
-    sorted.forEach((m,i)=>{
-      const lobbyLine = isAdmin
-        ? `Room: <span>${m.room||'—'}</span> &nbsp;·&nbsp; Pass: <span>${m.roompass||'—'}</span>`
-        : `Room ID: <span>${m.room||'TBA'}</span>`;
-      const row=document.createElement('div');
-      row.className=`sched-row ${m.status}`;
-      row.style.animationDelay=`${i*0.07}s`;
-      row.innerHTML=`
-        <div class="sr-time">${fmt12(m.time)}</div>
-        <div>
-          <div class="sr-name">${m.name}</div>
-          <div class="sr-meta">🔥 Free Fire · ${m.mode}${m.notes?' · '+m.notes:''}</div>
-        </div>
-        <div class="sr-right">
-          <div class="sr-status ${m.status}">${m.status.toUpperCase()}</div>
-          <div class="sr-lobby">${lobbyLine}</div>
-        </div>
-      `;
-      body.appendChild(row);
-    });
-  }
-  document.getElementById('modal-overlay').classList.remove('hidden');
+    const body=document.getElementById('modal-body');
+    body.innerHTML='';
+
+    if(!sorted.length){
+      body.innerHTML=`<div class="modal-empty"><span class="big">NO MATCHES TODAY</span>Admin will post the schedule soon. Stay ready! 🔥</div>`;
+    } else {
+      const isAdmin=currentUser&&currentUser.role==='admin';
+      sorted.forEach((m,i)=>{
+        const lobbyLine=isAdmin
+          ?`Room: <span>${m.room||'—'}</span> &nbsp;·&nbsp; Pass: <span>${m.roompass||'—'}</span>`
+          :`Room ID: <span>${m.room||'TBA'}</span>`;
+        const row=document.createElement('div');
+        row.className=`sched-row ${m.status}`;
+        row.style.animationDelay=`${i*0.07}s`;
+        row.innerHTML=`
+          <div class="sr-time">${fmt12(m.time)}</div>
+          <div>
+            <div class="sr-name">${m.name}</div>
+            <div class="sr-meta">🔥 Free Fire · ${m.mode}${m.notes?' · '+m.notes:''}</div>
+          </div>
+          <div class="sr-right">
+            <div class="sr-status ${m.status}">${m.status.toUpperCase()}</div>
+            <div class="sr-lobby">${lobbyLine}</div>
+          </div>
+        `;
+        body.appendChild(row);
+      });
+    }
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  });
 }
-function closeModal(){ document.getElementById('modal-overlay').classList.add('hidden'); }
+function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');}
 
-// ── Dashboard ──
-function renderDash(){
-  const today=todayStr();
-  const sched=getSched(today);
-  const live=sched.filter(m=>m.status==='live').length;
-  const up=sched.filter(m=>m.status==='upcoming').length;
+// ══ DASHBOARD RENDER ══
+function renderDashFromData(data){
+  const matches=Object.values(data.matches||{});
+  const live=matches.filter(m=>m.status==='live').length;
+  const up  =matches.filter(m=>m.status==='upcoming').length;
 
   document.getElementById('stat-row').innerHTML=`
     <div class="stat-card"><div class="stat-val red">${live}</div><div class="stat-key">Live Now</div></div>
     <div class="stat-card"><div class="stat-val">${up}</div><div class="stat-key">Upcoming</div></div>
-    <div class="stat-card"><div class="stat-val">${sched.length}</div><div class="stat-key">Total Today</div></div>
+    <div class="stat-card"><div class="stat-val">${matches.length}</div><div class="stat-key">Total Today</div></div>
     <div class="stat-card"><div class="stat-val" style="font-size:13px;letter-spacing:0">${currentUser.uid}</div><div class="stat-key">Your UID</div></div>
   `;
 
   const preview=document.getElementById('dash-preview');
-  if(!sched.length){
-    preview.innerHTML=`<div class="dash-empty"><span class="big">NO SCHEDULE YET</span>Tap "VIEW TODAY'S SCHEDULE" above to check updates.</div>`;
+  if(!matches.length){
+    preview.innerHTML=`<div class="dash-empty"><span class="big">NO SCHEDULE YET</span>Tap "VIEW TODAY'S SCHEDULE" to check.</div>`;
     return;
   }
-  const sorted=[...sched].sort((a,b)=>a.time.localeCompare(b.time));
+  const sorted=[...matches].sort((a,b)=>a.time.localeCompare(b.time));
   const list=document.createElement('div');
   list.className='preview-list';
   sorted.forEach((m,i)=>{
@@ -511,36 +614,39 @@ function renderDash(){
     item.onclick=()=>openModal();
     list.appendChild(item);
   });
+  preview.innerHTML='';
   preview.appendChild(list);
 }
 
-// ── Admin ──
+// ══ ADMIN ══
 function showAdmin(){
   document.getElementById('admin-date').value=todayStr();
-  renderAdmin();
+  switchAdminDate();
   showPage('page-admin');
 }
-function showDash(){ showPage('page-dash'); renderDash(); }
+function showDash(){showPage('page-dash');}
 
-function renderAdmin(){
+function switchAdminDate(){
   const date=document.getElementById('admin-date').value||todayStr();
-  const isToday=date===todayStr();
-  document.getElementById('date-note-txt').textContent=isToday?'← Today':'';
+  document.getElementById('date-note-txt').textContent=date===todayStr()?'← Today':'';
   document.getElementById('admin-date-lbl').textContent=fmtDateLong(date);
-  document.getElementById('ann-inp').value=getBanner(date);
+  db.ref(`schedule/${date}/banner`).once('value',snap=>{
+    document.getElementById('ann-inp').value=snap.val()||'';
+  });
+  attachAdminListener(date);
+}
 
-  const sched=getSched(date);
+function renderAdminFromData(date,data){
+  const matches=Object.values(data.matches||{});
   const list=document.getElementById('admin-list');
   list.innerHTML='';
-
-  if(!sched.length){
-    list.innerHTML=`<div class="dash-empty"><span class="big">NO MATCHES</span>Add matches using the form above.</div>`;
+  if(!matches.length){
+    list.innerHTML=`<div class="dash-empty"><span class="big">NO MATCHES</span>Form se add karo.</div>`;
     return;
   }
-  [...sched].sort((a,b)=>a.time.localeCompare(b.time)).forEach(m=>{
+  [...matches].sort((a,b)=>a.time.localeCompare(b.time)).forEach(m=>{
     const row=document.createElement('div');
     row.className='al-row';
-    row.setAttribute('data-id',m.id);
     row.innerHTML=`
       <div class="al-left">
         <div class="al-time">${m.time}</div>
@@ -550,8 +656,8 @@ function renderAdmin(){
         </div>
       </div>
       <div class="al-actions">
-        <span class="stat-toggle ${m.status}" onclick="cycleStatus('${m.id}')" title="Click to cycle status">${m.status}</span>
-        <button class="btn-del" onclick="deleteMatch('${m.id}')">REMOVE</button>
+        <span class="stat-toggle ${m.status}" onclick="cycleStatus('${date}','${m.id}')" title="Click to cycle status">${m.status}</span>
+        <button class="btn-del" onclick="deleteMatch('${date}','${m.id}')">REMOVE</button>
       </div>
     `;
     list.appendChild(row);
@@ -559,74 +665,71 @@ function renderAdmin(){
 }
 
 function addMatch(){
-  const date=document.getElementById('admin-date').value||todayStr();
-  const name=document.getElementById('f-name').value.trim();
-  const mode=document.getElementById('f-mode').value;
-  const time=document.getElementById('f-time').value;
-  const status=document.getElementById('f-status').value;
-  const room=document.getElementById('f-room').value.trim();
+  const date    =document.getElementById('admin-date').value||todayStr();
+  const name    =document.getElementById('f-name').value.trim();
+  const mode    =document.getElementById('f-mode').value;
+  const time    =document.getElementById('f-time').value;
+  const status  =document.getElementById('f-status').value;
+  const room    =document.getElementById('f-room').value.trim();
   const roompass=document.getElementById('f-roompass').value.trim();
-  const notes=document.getElementById('f-notes').value.trim();
-  if(!name||!time){ showToast('⚠ Fill in name and time!'); return; }
-  const sched=getSched(date);
-  sched.push({id:Date.now().toString(),name,mode,time,status,room,roompass,notes});
-  setSched(date,sched);
-  ['f-name','f-room','f-roompass','f-notes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-time').value='';
-  showToast('Match added ✓');
-  renderAdmin();
+  const notes   =document.getElementById('f-notes').value.trim();
+  if(!name||!time){showToast('⚠ Name aur time bharo!');return;}
+  const id=Date.now().toString();
+  db.ref(`schedule/${date}/matches/${id}`).set({id,name,mode,time,status,room,roompass,notes})
+    .then(()=>{
+      ['f-name','f-room','f-roompass','f-notes'].forEach(i=>document.getElementById(i).value='');
+      document.getElementById('f-time').value='';
+      showToast('Match added ✓');
+    })
+    .catch(e=>showToast('⚠ '+e.message));
 }
-function deleteMatch(id){
-  const date=document.getElementById('admin-date').value||todayStr();
-  setSched(date, getSched(date).filter(m=>m.id!==id));
-  showToast('Removed');
-  renderAdmin();
+
+function deleteMatch(date,id){
+  db.ref(`schedule/${date}/matches/${id}`).remove()
+    .then(()=>showToast('Match removed'))
+    .catch(e=>showToast('⚠ '+e.message));
 }
-function cycleStatus(id){
-  const date=document.getElementById('admin-date').value||todayStr();
+
+function cycleStatus(date,id){
   const order=['upcoming','live','done'];
-  const sched=getSched(date);
-  const m=sched.find(x=>x.id===id);
-  if(!m) return;
-  m.status=order[(order.indexOf(m.status)+1)%order.length];
-  setSched(date,sched);
-  renderAdmin();
+  db.ref(`schedule/${date}/matches/${id}/status`).once('value',snap=>{
+    const next=order[(order.indexOf(snap.val()||'upcoming')+1)%order.length];
+    db.ref(`schedule/${date}/matches/${id}/status`).set(next);
+  });
 }
+
 function clearDay(){
   const date=document.getElementById('admin-date').value||todayStr();
-  if(!confirm(`Clear all matches for ${fmtDateLong(date)}?`)) return;
-  setSched(date,[]);
-  showToast('Day cleared');
-  renderAdmin();
+  if(!confirm(`${fmtDateLong(date)} ke sabhi matches delete ho jayenge?`)) return;
+  db.ref(`schedule/${date}/matches`).remove()
+    .then(()=>showToast('Day cleared ✓'))
+    .catch(e=>showToast('⚠ '+e.message));
 }
+
 function saveBanner(){
   const date=document.getElementById('admin-date').value||todayStr();
-  setBanner(date, document.getElementById('ann-inp').value.trim());
-  showToast('Banner saved ✓');
+  db.ref(`schedule/${date}/banner`).set(document.getElementById('ann-inp').value.trim())
+    .then(()=>showToast('Banner saved ✓'))
+    .catch(e=>showToast('⚠ '+e.message));
 }
 function clearBanner(){
   const date=document.getElementById('admin-date').value||todayStr();
-  setBanner(date,'');
-  document.getElementById('ann-inp').value='';
-  showToast('Banner cleared');
+  db.ref(`schedule/${date}/banner`).remove()
+    .then(()=>{document.getElementById('ann-inp').value='';showToast('Banner cleared');});
 }
 
-// ── Toast ──
+// ── Toast / Flash ──
 let _tt;
 function showToast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),2400);
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2400);
 }
-
-// ── Demo seed ──
-if(!getSched(todayStr()).length){
-  setSched(todayStr(),[
-    {id:'d1',name:'Morning Scrim',mode:'Battle Royale',time:'09:00',status:'done',room:'8837261',roompass:'AX001',notes:'Bermuda · Squads'},
-    {id:'d2',name:'Clash Squad Ranked',mode:'Clash Squad',time:'15:30',status:'upcoming',room:'9920481',roompass:'AX002',notes:''},
-    {id:'d3',name:'Pro Custom Room',mode:'Custom Room',time:'20:00',status:'upcoming',room:'7741902',roompass:'AX2025',notes:'Record your gameplay'},
-  ]);
-  setBanner(todayStr(),'Be online 10 min before your match time. Good luck team! 🔥');
+let _uf;
+function showUpdateFlash(){
+  const f=document.getElementById('update-flash');
+  f.classList.add('show');
+  clearTimeout(_uf);_uf=setTimeout(()=>f.classList.remove('show'),3000);
 }
 </script>
 </body>
