@@ -119,13 +119,18 @@ body{background:var(--bk);color:var(--wh);font-family:'Rajdhani',sans-serif;min-
 .p-hd{font-size:11px;color:var(--mt);letter-spacing:1px;margin-top:2px;font-family:'Share Tech Mono',monospace}
 .p-ar{margin-left:auto;opacity:.3;font-size:16px}
 
-/* ═══ NEWS ═══ */
-#land-news{display:flex;flex-direction:column;gap:12px}
-.news-card{background:var(--card);border:1px solid var(--bd);border-left:3px solid var(--red);padding:18px 20px;display:flex;gap:20px;animation:rSlide .3s ease both}
-.news-dt{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--mt);letter-spacing:1px;white-space:nowrap;margin-top:4px;min-width:82px}
-.news-ttl{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;margin-bottom:4px}
-.news-bd{font-size:12px;color:var(--mt);letter-spacing:.5px;line-height:1.6}
-.news-empty{text-align:center;padding:30px;color:var(--mt);font-size:12px;letter-spacing:2px}
+/* ═══ NEWS IMAGE ═══ */
+.news-img{width:110px;height:80px;object-fit:cover;border:1px solid var(--bd);flex-shrink:0;filter:brightness(.9)}
+.news-card{flex-wrap:wrap}
+.news-img-full{width:100%;max-height:340px;object-fit:cover;border:1px solid var(--bd);margin-bottom:12px;display:block}
+.nw-img-wrap{position:relative;margin-top:4px}
+.nw-img-prev{width:100%;max-height:140px;object-fit:cover;border:1px solid #280000;display:none;margin-top:6px}
+.nw-upload-label{display:flex;align-items:center;gap:10px;background:#0c0c0c;border:1px dashed #280000;padding:10px 14px;cursor:pointer;transition:border-color .2s;font-size:11px;letter-spacing:2px;color:var(--mt);text-transform:uppercase}
+.nw-upload-label:hover{border-color:var(--red);color:var(--wh)}
+.nw-upload-label svg{width:16px;height:16px;flex-shrink:0}
+.nw-upload-prog{height:2px;background:#1e1e1e;margin-top:6px;overflow:hidden;display:none}
+.nw-upload-prog-bar{height:100%;width:0%;background:var(--red);box-shadow:0 0 6px var(--red);transition:width .2s}
+.na-thumb{width:48px;height:36px;object-fit:cover;border:1px solid var(--bd);flex-shrink:0}
 
 /* ═══ GET IN TOUCH ═══ */
 .git-wrap{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start}
@@ -657,7 +662,7 @@ body{background:var(--bk);color:var(--wh);font-family:'Rajdhani',sans-serif;min-
       <div class="a-sec"><h3>+ ADD FREE FIRE MATCH</h3>
         <div class="f-grid">
           <div class="fg2"><label>Match Name</label><input type="text" id="f-n" placeholder="e.g. FF Pro Scrim #7"/></div>
-          <div class="fg2"><label>Mode</label><select id="f-md"><option value="Battle Royale">Battle Royale</option><option value="Clash Squad">Clash Squad</option><option value="Custom Room">Custom Room</option><option value="Ranked Push">Ranked Push</option><option value="Tournament">Tournament</option><option value="Practice">Practice</option></select></div>
+          <div class="fg2"><label>Mode</label><select id="f-md"><option value="Battle Royale">Battle Royale</option><option value="Clash Squad">Clash Squad</option><option value="Custom Room">Custom Room</option><option value="Ranked Push">Scrims</option><option value="Tournament">Tournament</option><option value="Practice">Practice</option></select></div>
           <div class="fg2"><label>Time</label><input type="time" id="f-t"/></div>
           <div class="fg2"><label>Status</label><select id="f-st"><option value="upcoming">Upcoming</option><option value="live">Live Now</option><option value="done">Completed</option></select></div>
           <div class="fg2"><label>Room ID</label><input type="text" id="f-rm" placeholder="e.g. 8837261"/></div>
@@ -705,6 +710,19 @@ body{background:var(--bk);color:var(--wh);font-family:'Rajdhani',sans-serif;min-
         <div class="f-grid">
           <div class="fg2 full"><label>News Title</label><input type="text" id="nw-ttl" placeholder="e.g. New Scrim Season Starts!"/></div>
           <div class="fg2 full"><label>News Body</label><textarea id="nw-bd" rows="3" placeholder="Write announcement…" style="background:#0c0c0c;border:1px solid #280000;color:var(--wh);font-family:'Rajdhani',sans-serif;font-size:13px;padding:10px;outline:none;resize:none;width:100%"></textarea></div>
+          <div class="fg2 full">
+            <label>Image (Optional)</label>
+            <div class="nw-img-wrap">
+              <label class="nw-upload-label" for="nw-img-inp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                <span id="nw-img-lbl">Image select karo (JPG / PNG / GIF)</span>
+              </label>
+              <input type="file" id="nw-img-inp" accept="image/*" style="display:none" onchange="nwPreviewImg(this)"/>
+              <div class="nw-upload-prog" id="nw-prog"><div class="nw-upload-prog-bar" id="nw-prog-bar"></div></div>
+              <img class="nw-img-prev" id="nw-img-prev" src="" alt="preview"/>
+              <input type="hidden" id="nw-img-url" value=""/>
+            </div>
+          </div>
         </div>
         <button class="btn-add" onclick="adAddNews()" style="margin-top:8px">POST NEWS</button>
       </div>
@@ -977,9 +995,59 @@ function adRenderMgmt(){db.ref('mgmt_users').once('value',snap=>{const list=docu
 function adRemMgmt(id,nm){if(!confirm('Remove '+nm+'?'))return;db.ref('mgmt_users/'+id).remove().then(()=>{toast(nm+' removed');adRenderMgmt()})}
 
 // ── NEWS ──
-function adAddNews(){const t=document.getElementById('nw-ttl').value.trim(),b=document.getElementById('nw-bd').value.trim();if(!t||!b){toast('⚠ Title aur body bharo!');return}const id=Date.now().toString();db.ref('news/'+id).set({id,title:t,body:b,ts:Date.now()}).then(()=>{document.getElementById('nw-ttl').value='';document.getElementById('nw-bd').value='';toast('News posted ✓');adRenderNews()})}
-function adRenderNews(){db.ref('news').orderByChild('ts').once('value',snap=>{const el=document.getElementById('ad-news');const items=Object.values(snap.val()||{}).reverse();el.innerHTML='';if(!items.length){el.innerHTML='<div class="news-empty">No news yet.</div>';return}items.forEach(n=>{const r=document.createElement('div');r.className='na-row';r.innerHTML=`<div style="flex:1"><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px">${n.title}</div><div style="font-size:11px;color:var(--mt)">${n.body.substring(0,80)}…</div></div><div style="display:flex;gap:8px;align-items:center;flex-shrink:0"><span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--mt)">${fmtTs(n.ts)}</span><button class="btn-del" onclick="adDelNews('${n.id}')">DELETE</button></div>`;el.appendChild(r)})})}
-function adDelNews(id){db.ref('news/'+id).remove().then(()=>{toast('News deleted');adRenderNews()})}
+function nwPreviewImg(inp){
+  const file=inp.files[0];if(!file)return;
+  const lbl=document.getElementById('nw-img-lbl');
+  const prev=document.getElementById('nw-img-prev');
+  lbl.textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{prev.src=e.target.result;prev.style.display='block'};
+  reader.readAsDataURL(file);
+  document.getElementById('nw-img-url').value=''; // reset old url
+}
+function adAddNews(){
+  const t=document.getElementById('nw-ttl').value.trim();
+  const b=document.getElementById('nw-bd').value.trim();
+  if(!t||!b){toast('⚠ Title aur body bharo!');return}
+  const file=document.getElementById('nw-img-inp').files[0];
+  const id=Date.now().toString();
+  if(file){
+    const prog=document.getElementById('nw-prog');
+    const bar=document.getElementById('nw-prog-bar');
+    prog.style.display='block';bar.style.width='0%';
+    const ref=storage.ref('news-images/'+id+'_'+file.name);
+    const task=ref.put(file);
+    task.on('state_changed',
+      snap=>{bar.style.width=Math.round(snap.bytesTransferred/snap.totalBytes*100)+'%'},
+      err=>{toast('⚠ Upload fail: '+err.message);prog.style.display='none'},
+      ()=>{task.snapshot.ref.getDownloadURL().then(url=>{
+        db.ref('news/'+id).set({id,title:t,body:b,imageUrl:url,ts:Date.now()}).then(()=>{
+          nwReset();toast('News posted ✓');adRenderNews();
+        });
+      })}
+    );
+  } else {
+    db.ref('news/'+id).set({id,title:t,body:b,ts:Date.now()}).then(()=>{nwReset();toast('News posted ✓');adRenderNews()});
+  }
+}
+function nwReset(){
+  document.getElementById('nw-ttl').value='';
+  document.getElementById('nw-bd').value='';
+  document.getElementById('nw-img-inp').value='';
+  document.getElementById('nw-img-lbl').textContent='Image select karo (JPG / PNG / GIF)';
+  document.getElementById('nw-img-prev').style.display='none';
+  document.getElementById('nw-img-prev').src='';
+  document.getElementById('nw-img-url').value='';
+  document.getElementById('nw-prog').style.display='none';
+  document.getElementById('nw-prog-bar').style.width='0%';
+}
+function adRenderNews(){db.ref('news').orderByChild('ts').once('value',snap=>{const el=document.getElementById('ad-news');const items=Object.values(snap.val()||{}).reverse();el.innerHTML='';if(!items.length){el.innerHTML='<div class="news-empty">No news yet.</div>';return}items.forEach(n=>{const r=document.createElement('div');r.className='na-row';r.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex:1">${n.imageUrl?`<img class="na-thumb" src="${n.imageUrl}" alt="img"/>`:'<div style="width:48px;height:36px;background:#1a0000;border:1px solid #280000;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg></div>'}<div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px">${n.title}</div><div style="font-size:11px;color:var(--mt)">${n.body.substring(0,80)}…</div></div></div><div style="display:flex;gap:8px;align-items:center;flex-shrink:0"><span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--mt)">${fmtTs(n.ts)}</span><button class="btn-del" onclick="adDelNews('${n.id}','${n.imageUrl||''}')">DELETE</button></div>`;el.appendChild(r)})})}
+function adDelNews(id,imgUrl){
+  db.ref('news/'+id).remove().then(()=>{
+    toast('News deleted');adRenderNews();
+    if(imgUrl){try{storage.refFromURL(imgUrl).delete().catch(()=>{})}catch(e){}}
+  });
+}
 
 // ── MESSAGES ──
 function loadMsgBadge(){if(CU?.role!=='admin')return;db.ref('messages').once('value',snap=>{const c=Object.keys(snap.val()||{}).length;const b=document.getElementById('msg-b');if(c>0){b.textContent=c;b.style.display='inline'}else{b.style.display='none'}})}
